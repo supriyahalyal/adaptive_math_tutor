@@ -151,6 +151,20 @@ class GeneratedProblem(BaseModel):
         ...,
         description="The mathematical concept being exercised.",
     )
+    visual_emoji: str = Field(
+        "\U0001F34E",
+        description="A single emoji matching the item counted in the story (e.g., \U0001F438, \U0001F680, \U0001F986, \U0001F36A).",
+    )
+
+    @field_validator("visual_emoji", mode="before")
+    @classmethod
+    def sanitize_emoji(cls, v: Any) -> str:
+        """Ensures a single clean emoji is returned even if the SLM outputs text."""
+        if isinstance(v, str):
+            val = v.strip()
+            if val and ord(val[0]) > 127:
+                return val.split()[0]
+        return "\U0001F34E"
 
     @field_validator("operator", mode="before")
     @classmethod
@@ -257,7 +271,9 @@ def generate_next_problem(
                 "   - Mastery < 60%: Sums within 10 (e.g., 4 + 3, 6 + 2). Scaffold: 'visual'.\n"
                 "   - Mastery 60% - 74%: Sums crossing 10 (e.g., 7 + 4, 8 + 5). Scaffold: 'hint'.\n"
                 "   - Mastery >= 75%: Larger equations up to 20 (e.g., 12 + 5, 10 + 2). Scaffold: 'none'.\n"
-                "4. Numbers Only: Both operand_a and operand_b MUST be plain integers. "
+                "4. Numbers Only: Both operand_a and operand_b MUST be plain integers. No words.\n"
+                "5. Story Completeness: Explicitly mention BOTH numbers (operand_a and operand_b) in story_context so the story matches the equation.\n"
+                "6. Visual Emoji: Set visual_emoji to a single emoji matching the exact object being counted in the story.\n"
                 "NEVER use word labels, variable names, or story nouns (e.g. use 4 and 2, NEVER 'stamp' or 'fuel')."
             ),
         ),
